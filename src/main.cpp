@@ -1,49 +1,3 @@
-/*
-Author: Dominik Höbert, MSc
-Datum: 2022-07-10
-
-Funktion:
-  - Fragt wienerlinien API nach den Echtzeitabfahren einer Station ab
-  - Zeigt die nächsten zwei Abfahren auf einem Mini OLED Display an
-  - Button Druck wechselt stationen
-  - Deep Sleep nach bestimmter Zeit
-  - Button weckt aus Sleep auf
-
-Pins:
-  Button:
-    - Button --> 4 buttonPin
-    - Button --> GND
-
-  0,97" Mini OLED SSD1306:
-      OLED  |  ESP32
-    -  GND      GND
-    -  VCC      3V3
-    -  SCL      22 (SCL)
-    -  SDA      21 (SDA)
-
-Credentails:
-  Create a credentails.h file with the folloing content:
-  #define SSID "your-wifi-ssid"
-  #define WIFIpassword "your-wifi-password"
-
-Librarys:
-  - ArduinoJson https://arduinojson.org/
-  - Adafruit_SSD1306
-
-Other:
-  - Pinout: https://www.studiopieters.nl/esp32-pinout/
-  - Deep Sleep: https://randomnerdtutorials.com/esp32-deep-sleep-arduino-ide-wake-up-sources/
-  - HTTP Get: https://randomnerdtutorials.com/esp32-http-get-post-arduino/
-  - OLED: https://randomnerdtutorials.com/esp32-ssd1306-oled-display-arduino-ide/
-  - Wiener Linien API: https://www.data.gv.at/katalog/dataset/wiener-linien-echtzeitdaten-via-datendrehscheibe-wien
-  - Wiener Linien Station Numbers: https://till.mabe.at/rbl/
-
-*/
-
-// TODO:
-// - filter for lines (e.g. "31"), or by button
-// - RGB LED traffic light
-
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiClient.h>
@@ -59,6 +13,7 @@ const char *password = WIFIpassword;
 
 String serverName = "http://www.wienerlinien.at/ogd_realtime/monitor?rbl=";
 int stations[] = {2171, 2190}; // https://till.mabe.at/rbl/
+String preferedLine = "31";
 
 // IF BUTTON PIN IS CHANGED esp_sleep_enable_ext0_wakeup(GPIO_NUM_4,0); IN setup() HAS TO BE CHANGED TOO!!!
 const int buttonPin = 4; // the number of the pushbutton pin
@@ -105,32 +60,25 @@ void request_station()
         Serial.println(error.f_str());
         return;
       }
-      JsonObject data_monitors_0 = doc["data"]["monitors"][0];
-      JsonObject data_monitors_0_locationStop = data_monitors_0["locationStop"];
-      const char *data_monitors_0_locationStop_geometry_type = data_monitors_0_locationStop["geometry"]["type"];
-      JsonObject data_monitors_0_locationStop_properties = data_monitors_0_locationStop["properties"];
-      const char *data_monitors_0_locationStop_properties_title = data_monitors_0_locationStop_properties["title"];
-      JsonObject data_monitors_0_lines_0 = data_monitors_0["lines"][0];
-      const char *data_monitors_0_lines_0_name = data_monitors_0_lines_0["name"];                    // "31"
-      const char *data_monitors_0_lines_0_towards = data_monitors_0_lines_0["towards"];              // "Schottenring U"
-      const char *data_monitors_0_lines_0_direction = data_monitors_0_lines_0["direction"];          // "R"
-      const char *data_monitors_0_lines_0_platform = data_monitors_0_lines_0["platform"];            // "2"
-      const char *data_monitors_0_lines_0_richtungsId = data_monitors_0_lines_0["richtungsId"];      // "2"
-      bool data_monitors_0_lines_0_barrierFree = data_monitors_0_lines_0["barrierFree"];             // true
-      bool data_monitors_0_lines_0_realtimeSupported = data_monitors_0_lines_0["realtimeSupported"]; // true
-      bool data_monitors_0_lines_0_trafficjam = data_monitors_0_lines_0["trafficjam"];               // false
-      int countdown0 = data_monitors_0_lines_0["departures"]["departure"][0]["departureTime"]["countdown"];
-      int countdown1 = data_monitors_0_lines_0["departures"]["departure"][1]["departureTime"]["countdown"];
-      int countdown2 = data_monitors_0_lines_0["departures"]["departure"][2]["departureTime"]["countdown"];
-      Serial.println(String(data_monitors_0_lines_0_name) + "\t" + String(data_monitors_0_lines_0_towards) + "\t" + String(countdown0) + "|" + String(countdown1));
+      JsonObject data_monitors_0_locationStop = doc["data"]["monitors"][0]["locationStop"];
+      const char *stationTitle = data_monitors_0_locationStop["properties"]["title"]; // title: Station Name
+
+      JsonObject line = doc["data"]["monitors"][0]["lines"][0];
+      const char *lineName = line["name"];   // "31"
+      const char *towards = line["towards"]; // "Schottenring U"
+      bool trafficjam = line["trafficjam"];  // false
+      int countdown0 = line["departures"]["departure"][0]["departureTime"]["countdown"];
+      int countdown1 = line["departures"]["departure"][1]["departureTime"]["countdown"];
+      int countdown2 = line["departures"]["departure"][2]["departureTime"]["countdown"];
+
+      Serial.println(String(lineName) + "\t" + String(towards) + "\t" + String(countdown0) + "|" + String(countdown1));
       display.clearDisplay();
       display.setTextColor(SSD1306_WHITE);
-      // display.setFont(&FreeSans9pt7b);
       display.setCursor(0, 0);
       display.setTextSize(2);
-      display.println(String(data_monitors_0_lines_0_name));
+      display.println(String(lineName));
       display.setTextSize(1);
-      display.println(String(data_monitors_0_lines_0_towards));
+      display.println(String(towards));
       display.setTextSize(4);
       display.println(String(countdown0) + "|" + String(countdown1));
       display.display();
@@ -149,26 +97,6 @@ void request_station()
   lastTime = millis();
 }
 
-void testdrawstyles(void)
-{
-  display.clearDisplay();
-
-  display.setTextSize(1);              // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.setCursor(0, 0);             // Start at top-left corner
-  display.println(F("Hello, world!"));
-
-  display.setTextColor(SSD1306_BLACK, SSD1306_WHITE); // Draw 'inverse' text
-  display.println(3.141592);
-
-  display.setTextSize(2); // Draw 2X-scale text
-  display.setTextColor(SSD1306_WHITE);
-  display.print(F("0x"));
-  display.println(0xDEADBEEF, HEX);
-
-  display.display();
-}
-
 void setup()
 {
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
@@ -180,7 +108,7 @@ void setup()
   }
   display.clearDisplay();
 
-  // testdrawstyles();
+  display.setRotation(2); // uncomment to reset orientation
   display.clearDisplay();
   display.setTextSize(1);              // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE); // Draw white text
