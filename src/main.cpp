@@ -78,7 +78,12 @@ void request_station()
           display.setTextColor(SSD1306_WHITE);
           display.setCursor(0, 0);
           display.setTextSize(2);
-          display.println(String(lineName));
+          String trafficjam_indicator = " ";
+          if (trafficjam)
+          {
+            trafficjam_indicator = " !!";
+          }
+          display.println(String(lineName) + trafficjam_indicator);
           display.setTextSize(1);
           display.println(String(towards));
           display.setTextSize(4);

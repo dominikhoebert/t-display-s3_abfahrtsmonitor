@@ -51,6 +51,7 @@ Create a credentails.h file with the folloing content:
 ## TODO:
 
  - ~~filter for lines (e.g. "31"), or by button~~
+ - ~~trafficjam indicator~~
  - RGB LED traffic light
  - better font
 
