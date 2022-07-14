@@ -13,7 +13,7 @@ const char *password = WIFIpassword;
 
 String serverName = "http://www.wienerlinien.at/ogd_realtime/monitor?rbl=";
 int stations[] = {2171, 2190}; // https://till.mabe.at/rbl/
-String preferedLine = "31";
+String preferedLine = "31";          // Display can only show one line at a time. This is the prefered line. Could be extended with another button to change prefered line.
 
 // IF BUTTON PIN IS CHANGED esp_sleep_enable_ext0_wakeup(GPIO_NUM_4,0); IN setup() HAS TO BE CHANGED TOO!!!
 const int buttonPin = 4; // the number of the pushbutton pin
@@ -52,7 +52,7 @@ void request_station()
       String payload = http.getString();
       StaticJsonDocument<0> filter;
       filter.set(true);
-      DynamicJsonDocument doc(4096);
+      DynamicJsonDocument doc(4096 * 2);
       DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter), DeserializationOption::NestingLimit(15));
       if (error)
       {
@@ -60,28 +60,32 @@ void request_station()
         Serial.println(error.f_str());
         return;
       }
-      JsonObject data_monitors_0_locationStop = doc["data"]["monitors"][0]["locationStop"];
-      const char *stationTitle = data_monitors_0_locationStop["properties"]["title"]; // title: Station Name
+      
+      for (JsonObject monitor : doc["data"]["monitors"].as<JsonArray>())
+      {
+        const char *stationTitle = monitor["locationStop"]["properties"]["title"]; // title: Station Name
+        JsonObject line = monitor["lines"][0];
+        const char *lineName = line["name"];   // "31"
+        const char *towards = line["towards"]; // "Schottenring U"
+        bool trafficjam = line["trafficjam"];  // false
+        int countdown0 = line["departures"]["departure"][0]["departureTime"]["countdown"];
+        int countdown1 = line["departures"]["departure"][1]["departureTime"]["countdown"];
 
-      JsonObject line = doc["data"]["monitors"][0]["lines"][0];
-      const char *lineName = line["name"];   // "31"
-      const char *towards = line["towards"]; // "Schottenring U"
-      bool trafficjam = line["trafficjam"];  // false
-      int countdown0 = line["departures"]["departure"][0]["departureTime"]["countdown"];
-      int countdown1 = line["departures"]["departure"][1]["departureTime"]["countdown"];
-      int countdown2 = line["departures"]["departure"][2]["departureTime"]["countdown"];
-
-      Serial.println(String(lineName) + "\t" + String(towards) + "\t" + String(countdown0) + "|" + String(countdown1));
-      display.clearDisplay();
-      display.setTextColor(SSD1306_WHITE);
-      display.setCursor(0, 0);
-      display.setTextSize(2);
-      display.println(String(lineName));
-      display.setTextSize(1);
-      display.println(String(towards));
-      display.setTextSize(4);
-      display.println(String(countdown0) + "|" + String(countdown1));
-      display.display();
+        if (String(lineName) == preferedLine)
+        {
+          Serial.println(String(lineName) + "\t" + String(towards) + "\t" + String(countdown0) + "|" + String(countdown1));
+          display.clearDisplay();
+          display.setTextColor(SSD1306_WHITE);
+          display.setCursor(0, 0);
+          display.setTextSize(2);
+          display.println(String(lineName));
+          display.setTextSize(1);
+          display.println(String(towards));
+          display.setTextSize(4);
+          display.println(String(countdown0) + "|" + String(countdown1));
+          display.display();
+        }
+      }
     }
     else
     {

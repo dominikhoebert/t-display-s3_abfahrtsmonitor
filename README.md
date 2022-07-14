@@ -50,8 +50,9 @@ Create a credentails.h file with the folloing content:
 
 ## TODO:
 
- - filter for lines (e.g. "31"), or by button
+ - ~~filter for lines (e.g. "31"), or by button~~
  - RGB LED traffic light
+ - better font
 
  
 
