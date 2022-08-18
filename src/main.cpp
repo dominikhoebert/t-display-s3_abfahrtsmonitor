@@ -4,8 +4,6 @@
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include <credentials.h>
 
 const char *ssid = SSID;
@@ -16,14 +14,7 @@ int stations[] = {2171, 2190}; // https://till.mabe.at/rbl/
 String preferedLine = "31";          // Display can only show one line at a time. This is the prefered line. Could be extended with another button to change prefered line.
 
 // IF BUTTON PIN IS CHANGED esp_sleep_enable_ext0_wakeup(GPIO_NUM_4,0); IN setup() HAS TO BE CHANGED TOO!!!
-const int buttonPin = 4; // the number of the pushbutton pin
-
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
-#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+const int buttonPin = 0; // the number of the pushbutton pin
 
 // Delay until next GET Request
 unsigned long lastTime = 0;
@@ -74,21 +65,21 @@ void request_station()
         if (String(lineName) == preferedLine)
         {
           Serial.println(String(lineName) + "\t" + String(towards) + "\t" + String(countdown0) + "|" + String(countdown1));
-          display.clearDisplay();
-          display.setTextColor(SSD1306_WHITE);
-          display.setCursor(0, 0);
-          display.setTextSize(2);
-          String trafficjam_indicator = " ";
-          if (trafficjam)
-          {
-            trafficjam_indicator = " !!";
-          }
-          display.println(String(lineName) + trafficjam_indicator);
-          display.setTextSize(1);
-          display.println(String(towards));
-          display.setTextSize(4);
-          display.println(String(countdown0) + "|" + String(countdown1));
-          display.display();
+          // display.clearDisplay();
+          // display.setTextColor(SSD1306_WHITE);
+          // display.setCursor(0, 0);
+          // display.setTextSize(2);
+          // String trafficjam_indicator = " ";
+          // if (trafficjam)
+          // {
+          //   trafficjam_indicator = " !!";
+          // }
+          // display.println(String(lineName) + trafficjam_indicator);
+          // display.setTextSize(1);
+          // display.println(String(towards));
+          // display.setTextSize(4);
+          // display.println(String(countdown0) + "|" + String(countdown1));
+          // display.display();
         }
       }
     }
@@ -109,21 +100,21 @@ void request_station()
 void setup()
 {
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-  {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ; // Don't proceed, loop forever
-  }
-  display.clearDisplay();
+  // if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
+  // {
+  //   Serial.println(F("SSD1306 allocation failed"));
+  //   for (;;)
+  //     ; // Don't proceed, loop forever
+  // }
+  // display.clearDisplay();
 
-  display.setRotation(2); // uncomment to reset orientation
-  display.clearDisplay();
-  display.setTextSize(1);              // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.setCursor(0, 0);             // Start at top-left corner
-  display.println("Connecting to WiFi " + String(ssid));
-  display.display();
+  // display.setRotation(2); // uncomment to reset orientation
+  // display.clearDisplay();
+  // display.setTextSize(1);              // Normal 1:1 pixel scale
+  // display.setTextColor(SSD1306_WHITE); // Draw white text
+  // display.setCursor(0, 0);             // Start at top-left corner
+  // display.println("Connecting to WiFi " + String(ssid));
+  // display.display();
 
   pinMode(buttonPin, INPUT_PULLUP);
 
@@ -137,15 +128,15 @@ void setup()
   {
     delay(500);
     Serial.print(".");
-    display.print(".");
-    display.display();
+    // display.print(".");
+    // display.display();
   }
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
-  display.clearDisplay();
-  display.println("CONNECTED!");
-  display.println(String(WiFi.localIP()));
+  // display.clearDisplay();
+  // display.println("CONNECTED!");
+  // display.println(String(WiFi.localIP()));
   request_station();
 }
 
@@ -155,14 +146,14 @@ void loop()
   if (millis() > timetosleep)
   {
     Serial.println("Going to sleep now");
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.setTextSize(3);
-    display.println("SLEEPMODE");
-    display.display();
-    delay(1000);
-    display.clearDisplay();
-    display.display();
+    // display.setTextColor(SSD1306_WHITE);
+    // display.setCursor(0, 0);
+    // display.setTextSize(3);
+    // display.println("SLEEPMODE");
+    // display.display();
+    // delay(1000);
+    // display.clearDisplay();
+    // display.display();
     delay(1000);
     esp_deep_sleep_start();
   }
