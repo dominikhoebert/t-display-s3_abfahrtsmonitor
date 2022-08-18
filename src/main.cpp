@@ -2,8 +2,8 @@
 #include <HTTPClient.h>
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
-#include <SPI.h>
-#include <Wire.h>
+#include <TFT_eSPI.h>
+#include <pin_config.h>
 #include <credentials.h>
 
 const char *ssid = SSID;
@@ -11,10 +11,7 @@ const char *password = WIFIpassword;
 
 String serverName = "http://www.wienerlinien.at/ogd_realtime/monitor?rbl=";
 int stations[] = {2171, 2190}; // https://till.mabe.at/rbl/
-String preferedLine = "31";          // Display can only show one line at a time. This is the prefered line. Could be extended with another button to change prefered line.
-
-// IF BUTTON PIN IS CHANGED esp_sleep_enable_ext0_wakeup(GPIO_NUM_4,0); IN setup() HAS TO BE CHANGED TOO!!!
-const int buttonPin = 0; // the number of the pushbutton pin
+String preferedLine = "31";    // Display can only show one line at a time. This is the prefered line. Could be extended with another button to change prefered line.
 
 // Delay until next GET Request
 unsigned long lastTime = 0;
@@ -28,6 +25,8 @@ int buttonState;                    // the current reading from the input pin
 int lastButtonState = HIGH;         // the previous reading from the input pin
 unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
 unsigned long debounceDelay = 50;   // the debounce time; increase if the output flickers
+
+TFT_eSPI tft = TFT_eSPI();
 
 void request_station()
 {
@@ -51,7 +50,7 @@ void request_station()
         Serial.println(error.f_str());
         return;
       }
-      
+
       for (JsonObject monitor : doc["data"]["monitors"].as<JsonArray>())
       {
         const char *stationTitle = monitor["locationStop"]["properties"]["title"]; // title: Station Name
@@ -116,10 +115,20 @@ void setup()
   // display.println("Connecting to WiFi " + String(ssid));
   // display.display();
 
-  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(PIN_POWER_ON, OUTPUT);
+  digitalWrite(PIN_POWER_ON, HIGH);
+  tft.begin();
+  tft.setRotation(3);
+  tft.setTextSize(1);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+
+  // pinMode(PIN_BUTTON_1, INPUT_PULLUP);
+  // pinMode(PIN_BUTTON_2, INPUT_PULLUP);
 
   // CHANGE GPIO_NUM_X WITH BUTTONPIN
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 0); // 1 = High, 0 = Low
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_1, 0); // 1 = High, 0 = Low
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_2, 0); // 1 = High, 0 = Low
   Serial.begin(115200);
 
   WiFi.begin(ssid, password);
@@ -128,6 +137,7 @@ void setup()
   {
     delay(500);
     Serial.print(".");
+    tft.drawString(".", 0, 0, 2);
     // display.print(".");
     // display.display();
   }
@@ -158,7 +168,7 @@ void loop()
     esp_deep_sleep_start();
   }
 
-  int reading = digitalRead(buttonPin);
+  int reading = digitalRead(PIN_BUTTON_1);
   if (reading != lastButtonState)
   {
     lastDebounceTime = millis();
