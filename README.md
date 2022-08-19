@@ -1,29 +1,14 @@
-# Wiener Linien Abfahrtsmonitor for ESP32
+# Wiener Linien Abfahrtsmonitor for LILYGO T-DISPLAY-S3
 
 *Author:* Dominik Höbert, MSc  
-*Date:* 2022-07-10
+*Date:* 2022-08-19
 
 ## Funktion:
 
   - Fragt wienerlinien API nach den Echtzeitabfahren einer Station ab
   - Zeigt die nächsten zwei Abfahren auf einem Mini OLED Display an
-  - Button Druck wechselt stationen
   - Deep Sleep nach bestimmter Zeit
   - Button weckt aus Sleep auf
-
-
-## Pins
-
-|  Device |  ESP32 |
-|---|---|
-|Button   |4 (buttonPin)   |
-|Button   |GND   |
-|   |   |
-|0,97" Mini OLED SSD1306|
-|GND   |GND   |
-|VCC   |3V3   |
-|SCL   |22 (SCL)   |
-|SDA   |21 (SDA)  |
 
 ## Credentails:
 
@@ -37,23 +22,14 @@ Create a credentails.h file with the folloing content:
 ## Librarys:
 
   - ArduinoJson https://arduinojson.org/
-  - Adafruit_SSD1306
+  - OneButton
+  - TFT eSPI
 
 ## Other:
 
-  - Pinout: https://www.studiopieters.nl/esp32-pinout/
+  - LILYGO T-DISPLAY-S3: https://github.com/Xinyuan-LilyGO/T-Display-S3
   - Deep Sleep: https://randomnerdtutorials.com/esp32-deep-sleep-arduino-ide-wake-up-sources/
   - HTTP Get: https://randomnerdtutorials.com/esp32-http-get-post-arduino/
   - OLED: https://randomnerdtutorials.com/esp32-ssd1306-oled-display-arduino-ide/
   - Wiener Linien API: https://www.data.gv.at/katalog/dataset/wiener-linien-echtzeitdaten-via-datendrehscheibe-wien
   - Wiener Linien Station Numbers: https://till.mabe.at/rbl/
-
-## TODO:
-
- - ~~filter for lines (e.g. "31"), or by button~~
- - ~~trafficjam indicator~~
- - RGB LED traffic light
- - better font
-
- 
-

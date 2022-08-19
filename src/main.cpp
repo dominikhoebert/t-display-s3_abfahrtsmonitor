@@ -2,6 +2,7 @@
 #include <HTTPClient.h>
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
+#include <OneButton.h>
 #include <TFT_eSPI.h>
 #include <pin_config.h>
 #include <credentials.h>
@@ -18,76 +19,74 @@ unsigned long lastTime = 0;
 unsigned long timerDelay = 10000;          // time until next request (update)
 unsigned long timetosleep = 5 * 60 * 1000; // time until deep sleep
 
-int choice = 0;
-
-// Button debounce variables
-int buttonState;                    // the current reading from the input pin
-int lastButtonState = HIGH;         // the previous reading from the input pin
-unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
-unsigned long debounceDelay = 50;   // the debounce time; increase if the output flickers
-
 TFT_eSPI tft = TFT_eSPI();
+OneButton button0(PIN_BUTTON_1, true, false);
+OneButton button1(PIN_BUTTON_2, true, false);
 
 void request_station()
 {
   if (WiFi.status() == WL_CONNECTED)
   {
-    WiFiClient client;
-    HTTPClient http;
-    String serverPath = serverName + String(stations[choice]);
-    http.begin(client, serverPath.c_str());
-    int httpResponseCode = http.GET();
-    if (httpResponseCode > 0)
-    {
-      String payload = http.getString();
-      StaticJsonDocument<0> filter;
-      filter.set(true);
-      DynamicJsonDocument doc(4096 * 2);
-      DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter), DeserializationOption::NestingLimit(15));
-      if (error)
+    tft.fillScreen(TFT_BLACK);
+    for(int station=0; station<2; station++){
+      WiFiClient client;
+      HTTPClient http;
+      String serverPath = serverName + String(stations[station]);
+      http.begin(client, serverPath.c_str());
+      int httpResponseCode = http.GET();
+      if (httpResponseCode > 0)
       {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());
-        return;
-      }
-
-      for (JsonObject monitor : doc["data"]["monitors"].as<JsonArray>())
-      {
-        const char *stationTitle = monitor["locationStop"]["properties"]["title"]; // title: Station Name
-        JsonObject line = monitor["lines"][0];
-        const char *lineName = line["name"];   // "31"
-        const char *towards = line["towards"]; // "Schottenring U"
-        bool trafficjam = line["trafficjam"];  // false
-        int countdown0 = line["departures"]["departure"][0]["departureTime"]["countdown"];
-        int countdown1 = line["departures"]["departure"][1]["departureTime"]["countdown"];
-
-        if (String(lineName) == preferedLine)
+        String payload = http.getString();
+        StaticJsonDocument<0> filter;
+        filter.set(true);
+        DynamicJsonDocument doc(4096 * 2);
+        DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter), DeserializationOption::NestingLimit(15));
+        if (error)
         {
-          Serial.println(String(lineName) + "\t" + String(towards) + "\t" + String(countdown0) + "|" + String(countdown1));
-          // display.clearDisplay();
-          // display.setTextColor(SSD1306_WHITE);
-          // display.setCursor(0, 0);
-          // display.setTextSize(2);
-          // String trafficjam_indicator = " ";
-          // if (trafficjam)
-          // {
-          //   trafficjam_indicator = " !!";
-          // }
-          // display.println(String(lineName) + trafficjam_indicator);
-          // display.setTextSize(1);
-          // display.println(String(towards));
-          // display.setTextSize(4);
-          // display.println(String(countdown0) + "|" + String(countdown1));
-          // display.display();
+          Serial.print(F("deserializeJson() failed: "));
+          Serial.println(error.f_str());
+          return;
+        }
+
+        for (JsonObject monitor : doc["data"]["monitors"].as<JsonArray>())
+        {
+          const char *stationTitle = monitor["locationStop"]["properties"]["title"]; // title: Station Name
+          JsonObject line = monitor["lines"][0];
+          const char *lineName = line["name"];   // "31"
+          const char *towards = line["towards"]; // "Schottenring U"
+          bool trafficjam = line["trafficjam"];  // false
+          int countdown0 = line["departures"]["departure"][0]["departureTime"]["countdown"];
+          int countdown1 = line["departures"]["departure"][1]["departureTime"]["countdown"];
+
+          if (String(lineName) == preferedLine)
+          {
+            Serial.println(String(lineName) + "\t" + String(towards) + "\t" + String(countdown0) + "|" + String(countdown1));
+            String trafficjam_indicator = " ";
+            if (trafficjam)
+            {
+              trafficjam_indicator = " !!";
+            }
+            tft.setTextColor(TFT_WHITE);
+            tft.setFreeFont(&FreeSans12pt7b);
+            tft.setTextSize(1);
+            tft.setTextColor(TFT_RED);
+            tft.drawString(String(lineName) + trafficjam_indicator, 5, station*90);
+            tft.setTextColor(TFT_WHITE);
+            tft.drawString(String(towards), 35, station*90);
+            tft.setFreeFont(&FreeSans18pt7b);
+            tft.setTextSize(2);
+            tft.drawString(String(countdown0) + " / " + String(countdown1), 5, 20+station*90);
+            tft.setFreeFont(&FreeSans12pt7b);
+          }
         }
       }
+      else
+      {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+      }
+      http.end();
     }
-    else
-    {
-      Serial.print("Error code: ");
-      Serial.println(httpResponseCode);
-    }
-    http.end();
   }
   else
   {
@@ -96,100 +95,70 @@ void request_station()
   lastTime = millis();
 }
 
+static void handleClick()
+{
+  request_station();
+}
+
 void setup()
 {
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  // if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-  // {
-  //   Serial.println(F("SSD1306 allocation failed"));
-  //   for (;;)
-  //     ; // Don't proceed, loop forever
-  // }
-  // display.clearDisplay();
-
-  // display.setRotation(2); // uncomment to reset orientation
-  // display.clearDisplay();
-  // display.setTextSize(1);              // Normal 1:1 pixel scale
-  // display.setTextColor(SSD1306_WHITE); // Draw white text
-  // display.setCursor(0, 0);             // Start at top-left corner
-  // display.println("Connecting to WiFi " + String(ssid));
-  // display.display();
-
   pinMode(PIN_POWER_ON, OUTPUT);
-  digitalWrite(PIN_POWER_ON, HIGH);
+  digitalWrite(PIN_POWER_ON, LOW);
   tft.begin();
   tft.setRotation(3);
   tft.setTextSize(1);
+  tft.setFreeFont(&FreeSans18pt7b);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
 
-  // pinMode(PIN_BUTTON_1, INPUT_PULLUP);
-  // pinMode(PIN_BUTTON_2, INPUT_PULLUP);
-
-  // CHANGE GPIO_NUM_X WITH BUTTONPIN
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_1, 0); // 1 = High, 0 = Low
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_2, 0); // 1 = High, 0 = Low
+
+  // Single Click event attachment
+  button0.attachClick(handleClick);
+  button1.attachClick(handleClick);
   Serial.begin(115200);
 
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
+  tft.drawString("Connecting to " + String(ssid), 0, 0);
+  int i = 0;
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
     Serial.print(".");
-    tft.drawString(".", 0, 0, 2);
-    // display.print(".");
-    // display.display();
+    tft.drawString(".", i, 20, 2);
+    i++;
   }
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
-  // display.clearDisplay();
-  // display.println("CONNECTED!");
-  // display.println(String(WiFi.localIP()));
+  tft.drawString("Connected", 0, 40, 2);
+  tft.drawString(WiFi.localIP().toString(), 0, 60, 2);
   request_station();
 }
 
 void loop()
 {
+  button0.tick();
+  button1.tick();
+
   // activate deep sleep
   if (millis() > timetosleep)
   {
     Serial.println("Going to sleep now");
-    // display.setTextColor(SSD1306_WHITE);
-    // display.setCursor(0, 0);
-    // display.setTextSize(3);
-    // display.println("SLEEPMODE");
-    // display.display();
-    // delay(1000);
-    // display.clearDisplay();
-    // display.display();
+    tft.fillScreen(TFT_BLACK);
+    tft.setTextSize(3);
+    tft.drawString("Going to sleep", 0, 0);
+    delay(1000);
+    tft.fillScreen(TFT_BLACK);
+    pinMode(PIN_POWER_ON, OUTPUT);
+    pinMode(PIN_LCD_BL, OUTPUT);
+    digitalWrite(PIN_POWER_ON, LOW);
+    digitalWrite(PIN_LCD_BL, LOW);
     delay(1000);
     esp_deep_sleep_start();
   }
-
-  int reading = digitalRead(PIN_BUTTON_1);
-  if (reading != lastButtonState)
-  {
-    lastDebounceTime = millis();
-  }
-  if ((millis() - lastDebounceTime) > debounceDelay)
-  {
-    if (reading != buttonState)
-    {
-      buttonState = reading;
-      if (buttonState == LOW)
-      {
-        choice++;
-        if (choice >= sizeof(stations) / sizeof(stations[0]))
-        {
-          choice = 0;
-        }
-        request_station();
-      }
-    }
-  }
-  lastButtonState = reading;
 
   if ((millis() - lastTime) > timerDelay)
   {
