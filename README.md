@@ -33,3 +33,8 @@ Create a credentails.h file with the folloing content:
   - OLED: https://randomnerdtutorials.com/esp32-ssd1306-oled-display-arduino-ide/
   - Wiener Linien API: https://www.data.gv.at/katalog/dataset/wiener-linien-echtzeitdaten-via-datendrehscheibe-wien
   - Wiener Linien Station Numbers: https://till.mabe.at/rbl/
+
+## TODO
+
+- ~~prettier connecting screen~~
+- ~~show current time~~
