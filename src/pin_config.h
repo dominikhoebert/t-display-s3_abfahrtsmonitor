@@ -1,5 +1,7 @@
 #pragma once
 
+#define PIN_EXT_BUTTON 1
+
 /*ESP32S3*/
 #define PIN_LCD_BL 38
 

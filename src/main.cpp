@@ -22,6 +22,7 @@ unsigned long timetosleep = 5 * 60 * 1000; // time until deep sleep
 TFT_eSPI tft = TFT_eSPI();
 OneButton button0(PIN_BUTTON_1, true, false);
 OneButton button1(PIN_BUTTON_2, true, false);
+OneButton button2(PIN_EXT_BUTTON, true, true);
 
 void request_station()
 {
@@ -120,8 +121,11 @@ void setup()
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
+  pinMode(PIN_EXT_BUTTON, INPUT_PULLUP);
+
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_1, 0); // 1 = High, 0 = Low
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_2, 0); // 1 = High, 0 = Low
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_EXT_BUTTON, 0); // 1 = High, 0 = Low
 
   // Single Click event attachment
   button0.attachClick(handleClick);
