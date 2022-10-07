@@ -28,7 +28,7 @@ void request_station()
 {
   if (WiFi.status() == WL_CONNECTED)
   {
-    
+
     WiFiClient client;
     HTTPClient http;
     String serverPath = serverName;
@@ -48,7 +48,7 @@ void request_station()
         return;
       }
 
-      int direction=0;
+      int direction = 0;
       tft.fillScreen(TFT_BLACK);
       String time = doc["message"]["serverTime"];
       time = time.substring(11, 16);
@@ -67,6 +67,7 @@ void request_station()
         bool trafficjam = line["trafficjam"];  // false
         int countdown0 = line["departures"]["departure"][0]["departureTime"]["countdown"];
         int countdown1 = line["departures"]["departure"][1]["departureTime"]["countdown"];
+        int countdown2 = line["departures"]["departure"][2]["departureTime"]["countdown"];
 
         if (String(lineName) == preferedLine)
         {
@@ -85,7 +86,7 @@ void request_station()
           tft.drawString(String(towards), 35, direction * 90);
           tft.setFreeFont(&FreeSans18pt7b);
           tft.setTextSize(2);
-          tft.drawString(String(countdown0) + " / " + String(countdown1), 5, 20 + direction * 90);
+          tft.drawString(String(countdown0) + " / " + String(countdown1) + " / " + String(countdown2), 5, 20 + direction * 90);
           tft.setFreeFont(&FreeSans12pt7b);
           direction++;
         }
@@ -115,7 +116,7 @@ void setup()
   pinMode(PIN_POWER_ON, OUTPUT);
   digitalWrite(PIN_POWER_ON, LOW);
   tft.begin();
-  tft.setRotation(1);
+  tft.setRotation(3);
   tft.setTextSize(1);
   tft.setFreeFont(&FreeSans18pt7b);
   tft.fillScreen(TFT_BLACK);
@@ -123,25 +124,27 @@ void setup()
 
   pinMode(PIN_EXT_BUTTON, INPUT_PULLUP);
 
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_1, 0); // 1 = High, 0 = Low
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_2, 0); // 1 = High, 0 = Low
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_1, 0);   // 1 = High, 0 = Low
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON_2, 0);   // 1 = High, 0 = Low
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_EXT_BUTTON, 0); // 1 = High, 0 = Low
 
   // Single Click event attachment
   button0.attachClick(handleClick);
   button1.attachClick(handleClick);
+  button2.attachClick(handleClick);
   Serial.begin(115200);
 
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
-  //tft.drawString("Connecting to " + String(ssid), 0, 0);
+  // tft.drawString("Connecting to " + String(ssid), 0, 0);
   int i = 0;
-  String spinner[5]={"Ooooo", "oOooo", "ooOoo", "oooOo", "ooooO"};
+  String spinner[5] = {"Ooooo", "oOooo", "ooOoo", "oooOo", "ooooO"};
   while (WiFi.status() != WL_CONNECTED)
   {
     Serial.print(".");
     tft.setTextSize(2);
-    for(int i=0; i<5; i++){
+    for (int i = 0; i < 5; i++)
+    {
       tft.fillScreen(TFT_BLACK);
       tft.drawString(spinner[i], 50, 50);
       delay(50);
