@@ -39,7 +39,7 @@ void request_station()
       String payload = http.getString();
       StaticJsonDocument<0> filter;
       filter.set(true);
-      DynamicJsonDocument doc(4096 * 2);
+      DynamicJsonDocument doc(4096 * 3);
       DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter), DeserializationOption::NestingLimit(15));
       if (error)
       {
