@@ -76,7 +76,7 @@ void request_station()
       String payload = http.getString();
       StaticJsonDocument<0> filter;
       filter.set(true);
-      DynamicJsonDocument doc(4096 * 3);
+      DynamicJsonDocument doc(4096 * 5);
       DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter), DeserializationOption::NestingLimit(15));
       if (error)
       {
@@ -185,6 +185,21 @@ void setup()
       tft.fillScreen(TFT_BLACK);
       tft.drawString(spinner[i], 50, 50);
       delay(50);
+    }
+    if (millis() > 20 * 1000) // if stuck in Connecting for 20 Secounds
+    {
+      Serial.println("Going to sleep now, counld not connect to WiFi");
+      tft.fillScreen(TFT_BLACK);
+      tft.setTextSize(2);
+      tft.drawString("No WiFi", 50, 60);
+      delay(2000);
+      tft.fillScreen(TFT_BLACK);
+      pinMode(PIN_POWER_ON, OUTPUT);
+      pinMode(PIN_LCD_BL, OUTPUT);
+      digitalWrite(PIN_POWER_ON, LOW);
+      digitalWrite(PIN_LCD_BL, LOW);
+      delay(1000);
+      esp_deep_sleep_start();
     }
   }
   Serial.println("");
